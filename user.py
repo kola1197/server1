@@ -5,3 +5,4 @@ class User:
         self.sock = None
         self.addr = None
         self.opponent = None
+        self.opponent_socket = None

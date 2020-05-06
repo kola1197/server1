@@ -1,36 +1,58 @@
 from socket import *
-
+import time
+import threading
 host = '127.0.0.1'
 port = 777
 addr = (host,port)
+class Client:
+    def __init__(self):
+        self.is_working = True
+        self.nickname = None
+        self.socket = socket(AF_INET, SOCK_STREAM)
+        self.socket.connect(addr)
+        self.opponent = None
+        self.oppsock = socket()
+        self.start()
 
-is_working = True
+    def start(self):
 
-socket = socket(AF_INET, SOCK_STREAM)
-socket.connect(addr)
+        self.nickname = input('your name: ')
+        self.nickname = self.nickname.encode('utf-8')
+        self.socket.send(self.nickname)
 
-nickname = input('your name: ')
-nickname = nickname.encode('utf-8')
-socket.send(nickname)
+        msg = self.socket.recv(1024)
+        print(msg.decode('utf-8'))
 
-msg = socket.recv(1024)
-print(msg.decode('utf-8'))
+        self.opponent = input ('your opponent: ')
+        self.opponent =  self.opponent.encode('utf-8')
+        self.socket.send(self.opponent)
 
-opponent = input ('your opponent: ')
-opponent =  opponent.encode('utf-8')
-socket.send(opponent)
+        msg = self.socket.recv(1024)
+        print(msg.decode('utf-8'))
+        #   !socket of your opponet!
+        self.oppsock = self.socket.recv(1024)
+        print(self.oppsock.decode('utf-8'))
 
-msg = socket.recv(1024)
-print(msg.decode('utf-8'))
+        time.sleep(0.3)
+        self.threading_my_func()
 
-while is_working:
-    data = input('write to server: ')
-    data = data.encode('utf-8')
-    socket.send(data)
-    msg = socket.recv(1024)
-    print(msg.decode('utf-8'))
+    def threading_my_func(self):
+        thrsend = threading.Thread(target=self.sending)
+        thrreceiving = threading.Thread(target=self.receiving)
+        thrsend.start()
+        thrreceiving.start()
+
+    def sending(self):
+        while self.is_working:
+            data = input('write to server: ')
+            data = data.encode('utf-8')
+            self.socket.send(data)
 
 
+    def receiving(self):
+        while self.is_working:
+            msg = self.socket.recv(1024)
+            print(msg.decode('utf-8'))
 
-
-socket.close()
+if __name__ == '__main__':
+    cl = Client()
