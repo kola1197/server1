@@ -1,48 +1,75 @@
 import socket
+from user import User
 import threading
-
 class Server:
-    clients_list = []
-    last_received_message = ""
+
     def __init__(self):
-        self.server_socket = None
-        self.create_server()
+        self.clients = []
+        self.nicknames = []
+        self.serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("server initializated")
+        self.start()
+        self.receiving()
 
-    def create_server(self):
-
-        self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        local_ip = '127.0.0.1'
-        local_port = 9090
-        print('server started')
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.bind((local_ip, local_port))
-        self.server_socket.listen(5)
-        self.receive_message_in_a_new_thread()
-
-
-    def receive_message(self, so):
+    def start(self):
+        host = '127.0.0.1'
+        port = 777
+        self.serv.bind((host, port))
+        self.serv.listen(10)
+        print('start')
+    def receiving(self):
         while True:
-            incoming_buffer = so.recv(1024)
-            if not incoming_buffer:
-                break
-            self.last_received = incoming_buffer.decode('utf-8')
-            self.broadcast_to_all_clients(so)
+            conn, addr = self.serv.accept()
+            print(conn)
+            print(addr)
+            if addr not in self.clients:
+                self.meetings(addr, conn)
+                self.clients.append(addr)
 
-    def broadcast_to_all_clients(self, sender_sockets):
-        for client in self.clients_list:
-            so, (ip,port) = client
-            if so not in sender_sockets:
-                so.sendall(self.last_received_message.encode('utf-8'))
+            else:
+                msg = conn.recv(1024)
+                print(msg)
 
-    def receive_message_in_a_new_thread(self):
-        while True:
-            client = so, (ip, port) = self.server_socket.accept()
-            self.add_to_clients(client)
-            t = threading.Thread(target = self.receive_message(), args = (so,))
-            t.start()
-    def add_to_clients(self, client):
-        if client not in self.clients_list:
-            self.clients_list.append(client)
+
+
+
+    def meetings(self, addr, conn):
+
+        user = User()
+
+        # meetings: name and opponet's name
+
+        nickname = conn.recv(1024)
+        nickname = nickname.decode('utf-8')
+
+        print(nickname + ' присоединился')
+        msg = 'connected!'
+        self.send_to_client(conn, msg)
+
+        self.nicknames.append(nickname)
+
+        opponent = conn.recv(1024)
+        opponent = opponent.decode('utf-8')
+
+        user.addr = addr
+        user.sock = conn
+        user.nick = nickname
+        user.opponent = opponent
+
+        print(opponent + ' - имя соперника')
+
+        if opponent in self.nicknames:
+            msg = opponent + ' connected'
+            self.send_to_client(user.sock, msg)
+        else:
+            msg = opponent + ' is not here :('
+            self.send_to_client(user.sock, msg)
+
+    def print_on_server(self, data):
+        print(data.decode('utf-8'))
+
+    def send_to_client(self, client_socket, msg):
+        client_socket.send(msg.encode('utf-8'))
 
 if __name__ == '__main__':
     s = Server()
